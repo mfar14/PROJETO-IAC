@@ -105,7 +105,7 @@ printPoint:
     
 
 ### cleanScreen
-# Limpa todos os pontos do ecrã
+# Limpa todos os pontos do ecr?
 # Argumentos: nenhum
 # Retorno: nenhum
 
@@ -125,7 +125,16 @@ cleanScreen:
         addi sp, sp, 4
         addi a0, a0, 4
         addi t0, t0, -1
-        bgt t0, x0, ciclo 
+        bgt t0, x0, ciclo #limpa os pontos definidos no input
+        la t1, centroids
+        lw a0, 0(t1)
+        addi, t1, t1, 4
+        lw a1, 0(t1) 
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        jal printPoint #chama a função print para o centroid
+        lw ra, 0(sp) #retorna ao ra
+        addi sp, sp, 4
     jr ra
 
     
@@ -173,11 +182,19 @@ mainSingleCluster:
 
     #2. cleanScreen
     # POR IMPLEMENTAR (1a parte)
-    addi sp, sp, -4
+    addi sp, sp, -20
     sw ra, 0(sp)
+    sw a2, 4(sp)# guarda na pilha todos os valores
+    sw a0, 8(sp)#que serão utilizados na função clean
+    sw a1, 12(sp)
+    sw t1, 16(sp)
     jal cleanScreen
     lw ra, 0(sp)
-    addi sp, sp, 4
+    lw a2, 4(sp)
+    lw a0, 8(sp)
+    lw a1, 12(sp)#recupera os valores
+    lw t1, 16(sp)
+    addi sp, sp, 20 #"fecha" a pilha
 
     #3. printClusters
     # POR IMPLEMENTAR (1a parte)
