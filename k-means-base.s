@@ -37,8 +37,8 @@
 #points: .word 0,0, 0,1, 0,2, 1,0, 1,1, 1,2, 1,3, 2,0, 2,1, 5,3, 6,2, 6,3, 6,4, 7,2, 7,3, 6,8, 6,9, 7,8, 8,7, 8,8, 8,9, 9,7, 9,8
 
 #Input D
-n_points:    .word 30
-points:      .word 16, 1, 17, 2, 18, 6, 20, 3, 21, 1, 17, 4, 21, 7, 16, 4, 21, 6, 19, 6, 4, 24, 6, 24, 8, 23, 6, 26, 6, 26, 6, 23, 8, 25, 7, 26, 7, 20, 4, 21, 4, 10, 2, 10, 3, 11, 2, 12, 4, 13, 4, 9, 4, 9, 3, 8, 0, 10, 4, 10
+#n_points:    .word 30
+#points:      .word 16, 1, 17, 2, 18, 6, 20, 3, 21, 1, 17, 4, 21, 7, 16, 4, 21, 6, 19, 6, 4, 24, 6, 24, 8, 23, 6, 26, 6, 26, 6, 23, 8, 25, 7, 26, 7, 20, 4, 21, 4, 10, 2, 10, 3, 11, 2, 12, 4, 13, 4, 9, 4, 9, 3, 8, 0, 10, 4, 10
 
 
 
@@ -103,6 +103,19 @@ printPoint:
     sw a2, 0(a3)
     jr ra
     
+###mudar_k
+#muda o valor do k a k=1
+mudar_k:
+    resto:
+    	addi sp, sp, -4
+    	sw a0, 0(sp)
+    	la a0, k
+        sw t1, 0(a0)
+        lw a0, 0(sp)
+        addi sp, sp, 4
+        jr ra
+    bne, t0, t1, resto
+    jr ra
 
 ### cleanScreen
 # Limpa todos os pontos do ecr?
@@ -123,7 +136,7 @@ cleanScreen:
         jal printPoint
         lw ra, 0(sp)
         addi sp, sp, 4
-        addi a0, a0, 4
+        addi t1, t1, 4
         addi t0, t0, -1
         bgt t0, x0, ciclo #limpa os pontos definidos no input
         la t1, centroids
@@ -132,7 +145,7 @@ cleanScreen:
         lw a1, 0(t1) 
         addi sp, sp, -4
         sw ra, 0(sp)
-        jal printPoint #chama a função print para o centroid
+        jal printPoint #chama a funcao print para o centroid
         lw ra, 0(sp) #retorna ao ra
         addi sp, sp, 4
     jr ra
@@ -145,7 +158,22 @@ cleanScreen:
 
 printClusters:
     # POR IMPLEMENTAR (1a e 2a parte)
-    
+    lw t0, n_points
+    la t1, points
+    la t2, colors
+    lw a2, 0(t2)
+    forClusters:
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        lw a0, 0(t1) #X
+        addi t1, t1, 4
+        lw a1, 0(t1) #Y
+        jal printPoint
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        addi t1, t1, 4
+        addi t0, t0, -1
+        bgt t0, x0, forClusters #continua o ciclo
     jr ra
 
 
@@ -157,6 +185,21 @@ printClusters:
 
 printCentroids:
     # POR IMPLEMENTAR (1a e 2a parte)
+    li t0, 1 #numero de centroids
+    la t1, centroids
+    lw a2, black
+    for_centroids:
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        lw a0, 0(t1) #X
+        addi t1, t1, 4
+        lw a1, 0(t1) #Y
+        jal printPoint
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        addi t1, t1, 4
+        addi t0, t0, -1
+        bgt t0, x0, forClusters #continua o ciclo
     jr ra
     
 
@@ -167,6 +210,24 @@ printCentroids:
 
 calculateCentroids:
     # POR IMPLEMENTAR (1a e 2a parte)
+    lw a0, n_points
+    la a1, points
+    li t0, 0 #soma X
+    li t1, 0 #soma Y
+    mv t2, a0
+    for_calcula_centroid:
+        lw s0, 0(a1)
+        add t0, t0, s0
+        lw s0, 4(a1)
+        add t1, t1, s0
+        addi a1, a1, 8
+        addi t2, t2, -1
+        bgt t2, x0, for_calcula_centroid
+        la a1, centroids
+        div t0, t0, a0
+        sw t0, 0(a1)
+        div t1, t1, a0
+        sw t1, 4(a1)
     jr ra
 
 
@@ -179,32 +240,71 @@ mainSingleCluster:
 
     #1. Coloca k=1 (caso nao esteja a 1)
     # POR IMPLEMENTAR (1a parte)
-
+    lw t0, k
+    li, t1, 1
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    jal mudar_k
+    lw ra, 0(sp)
+    addi sp, sp, 4
+ 
     #2. cleanScreen
     # POR IMPLEMENTAR (1a parte)
-    addi sp, sp, -20
+    addi sp, sp, -16
     sw ra, 0(sp)
     sw a2, 4(sp)# guarda na pilha todos os valores
-    sw a0, 8(sp)#que serão utilizados na função clean
+    sw a0, 8(sp)#que serao utilizados na funcao clean
     sw a1, 12(sp)
-    sw t1, 16(sp)
     jal cleanScreen
     lw ra, 0(sp)
     lw a2, 4(sp)
     lw a0, 8(sp)
     lw a1, 12(sp)#recupera os valores
-    lw t1, 16(sp)
-    addi sp, sp, 20 #"fecha" a pilha
+    addi sp, sp, 16 #"fecha" a pilha
 
     #3. printClusters
     # POR IMPLEMENTAR (1a parte)
+    addi sp, sp, -16
+    sw ra, 0(sp)
+    sw a2, 4(sp)# guarda na pilha os valores iniciais
+    sw a0, 8(sp)
+    sw a1, 12(sp)
+    jal printClusters
+    lw ra, 0(sp)
+    lw a2, 4(sp)
+    lw a0, 8(sp)
+    lw a1, 12(sp)#recupera os valores
+    addi sp, sp, 16
+    
 
     #4. calculateCentroids
     # POR IMPLEMENTAR (1a parte)
-
+    addi sp, sp, -16
+    sw ra, 0(sp)
+    sw a0, 4(sp)
+    sw a1, 8(sp)
+    sw a2, 12(sp)
+    jal calculateCentroids
+    lw a2, 12(sp)
+    lw a1, 8(sp)
+    lw a0, 4(sp)
+    lw ra, 0(sp)
+    addi sp, sp, 16
+    
     #5. printCentroids
     # POR IMPLEMENTAR (1a parte)
-
+    addi sp, sp, -16
+    sw ra, 0(sp)
+    sw a0, 4(sp)
+    sw a1, 8(sp)
+    sw a2, 12(sp)
+    jal printCentroids
+    lw a2, 12(sp)
+    lw a1, 8(sp)
+    lw a0, 4(sp)
+    lw ra, 0(sp)
+    addi sp, sp, 16
+    
     #6. Termina
     jr ra
 
