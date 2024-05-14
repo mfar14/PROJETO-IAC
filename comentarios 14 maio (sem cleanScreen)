@@ -1,0 +1,339 @@
+#
+# IAC 2023/2024 k-means
+# 
+# Grupo:
+# Campus: Alameda
+#
+# Autores:
+# ist1109625, Francisco Pestana
+# ist1107357, Andreia Andrade
+# ist1109695, Miguel Ribeiro
+#
+# Tecnico/ULisboa
+
+
+# ALGUMA INFORMACAO ADICIONAL PARA CADA GRUPO:
+# - A "LED matrix" deve ter um tamanho de 32 x 32
+# - O input e' definido na seccao .data. 
+# - Abaixo propomos alguns inputs possiveis. Para usar um dos inputs propostos, basta descomentar 
+#   esse e comentar os restantes.
+# - Encorajamos cada grupo a inventar e experimentar outros inputs.
+# - Os vetores points e centroids estao na forma x0, y0, x1, y1, ...
+
+
+# Variaveis em memoria
+.data
+
+#Input A - linha inclinada
+n_points:    .word 9
+points:      .word 0,0, 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7 8,8
+
+#Input B - Cruz
+#n_points:    .word 5
+#points:     .word 4,2, 5,1, 5,2, 5,3 6,2
+
+#Input C
+#n_points:    .word 23
+#points: .word 0,0, 0,1, 0,2, 1,0, 1,1, 1,2, 1,3, 2,0, 2,1, 5,3, 6,2, 6,3, 6,4, 7,2, 7,3, 6,8, 6,9, 7,8, 8,7, 8,8, 8,9, 9,7, 9,8
+
+#Input D
+#n_points:    .word 30
+#points:      .word 16, 1, 17, 2, 18, 6, 20, 3, 21, 1, 17, 4, 21, 7, 16, 4, 21, 6, 19, 6, 4, 24, 6, 24, 8, 23, 6, 26, 6, 26, 6, 23, 8, 25, 7, 26, 7, 20, 4, 21, 4, 10, 2, 10, 3, 11, 2, 12, 4, 13, 4, 9, 4, 9, 3, 8, 0, 10, 4, 10
+
+
+
+# Valores de centroids e k a usar na 1a parte do projeto:
+centroids:   .word 0,0
+k:           .word 1
+
+# Valores de centroids, k e L a usar na 2a parte do prejeto:
+#centroids:   .word 0,0, 10,0, 0,10
+#k:           .word 3
+#L:           .word 10
+
+# Abaixo devem ser declarados o vetor clusters (2a parte) e outras estruturas de dados
+# que o grupo considere necessarias para a solucao:
+#clusters:    
+
+
+
+
+#Definicoes de cores a usar no projeto 
+
+colors:      .word 0xff0000, 0x00ff00, 0x0000ff  # Cores dos pontos do cluster 0, 1, 2, etc.
+
+.equ         black      0
+.equ         white      0xffffff
+
+
+
+# Codigo
+ 
+.text
+    # Chama funcao principal da 1a parte do projeto
+    jal mainSingleCluster
+
+    # Descomentar na 2a parte do projeto:
+    #jal mainKMeans
+    
+    #Termina o programa (chamando chamada sistema)
+    li a7, 10
+    ecall
+
+
+### printPoint
+# Pinta o ponto (x,y) na LED matrix com a cor passada por argumento
+# Nota: a implementacao desta funcao ja' e' fornecida pelos docentes
+# E' uma funcao auxiliar que deve ser chamada pelas funcoes seguintes que pintam a LED matrix.
+# Argumentos:
+# a0: x
+# a1: y
+# a2: cor
+
+printPoint:
+    li a3, LED_MATRIX_0_HEIGHT
+    sub a1, a3, a1
+    addi a1, a1, -1
+    li a3, LED_MATRIX_0_WIDTH
+    mul a3, a3, a1
+    add a3, a3, a0
+    slli a3, a3, 2
+    li a0, LED_MATRIX_0_BASE
+    add a3, a3, a0   # addr
+    sw a2, 0(a3)
+    jr ra
+    
+###mudar_k (funcao auxiliar)
+#muda o valor do k a k=1
+mudar_k:
+    resto:
+    	addi sp, sp, -4 # Alocacao de espaco na pilha
+    	sw a0, 0(sp) # Guarda o valor de a0
+    	la a0, k # Coloca o valor da variavel k no registo a0
+        sw t1, 0(a0) # Da o valor t1 a variavel k
+        lw a0, 0(sp) # Volta a carregar o valor para a0 
+        addi sp, sp, 4 # Restaura o ponteiro da pilha
+        jr ra # Retorna a funcao
+    bne, t0, t1, resto # Se t0 for difrente de t1 volta para o incio 
+    jr ra # Retorna a função depois se a linha anterior for cumprida
+
+### cleanScreen
+# Limpa todos os pontos do ecr?
+# Argumentos: nenhum
+# Retorno: nenhum
+
+cleanScreen:
+    lw t0, n_points
+    la t1, points 
+    lw a2, white 
+    ciclo:
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        lw a0, 0(t1)
+        addi t1, t1, 4
+        lw a1, 0(t1)
+        jal printPoint
+        lw ra, 0(sp)
+        addi sp, sp, 4
+        addi t1, t1, 4
+        addi t0, t0, -1
+        bgt t0, x0, ciclo #limpa os pontos definidos no input
+        la t1, centroids
+        lw a0, 0(t1)
+        addi, t1, t1, 4
+        lw a1, 0(t1) 
+        addi sp, sp, -4
+        sw ra, 0(sp)
+        jal printPoint # Chama a funcao print para o centroid
+        lw ra, 0(sp) # Retorna ao ra
+        addi sp, sp, 4
+    jr ra
+
+    
+### printClusters
+# Pinta os agrupamentos na LED matrix com a cor correspondente.
+# Argumentos: nenhum
+# Retorno: nenhum
+
+printClusters:
+    # POR IMPLEMENTAR (2a parte)
+    lw t0, n_points # Numero de pontos e carregado para t0
+    la t1, points # Enderco da lista dos pontos e carregado para t1
+    la t2, colors # Enderco da lista das cores dos pontos e carregado para t2
+    lw a2, 0(t2) # Carrega o primeiro elemento da lista das cores para a2
+    forClusters: # Inicio do ciclo que faz print dos clusters
+        addi sp, sp, -4 # Aloca espaco na pilha para armazenar o endereco de retorno 
+        sw ra, 0(sp) # Salva o endereco de retorno 
+        lw a0, 0(t1) # Carrega o X do centroide no qual vai o ciclo para a0
+        addi t1, t1, 4 # Avanca para a posicao seguinte na lista (Y)
+        lw a1, 0(t1) # Carrega o Y do centroide atual para a1
+        jal printPoint # Chama a funcao printPoint para dar print dos pontos
+        lw ra, 0(sp) # Restaura o endereco de retorno
+        addi sp, sp, 4 # Desaloca espaco na pilha
+        addi t1, t1, 4 # Avanca para o ponto seguinte
+        addi t0, t0, -1 # Retira 1 a contagem de pontos
+        bgt t0, x0, forClusters # Continua o ciclo se nao tiver dado print a todos os pontos
+    jr ra # Retorna a funcao
+
+
+### printCentroids
+# Pinta os centroides na LED matrix
+# Nota: deve ser usada a cor preta (black) para todos os centroides
+# Argumentos: nenhum
+# Retorno: nenhum
+
+printCentroids:
+    # POR IMPLEMENTAR (2a parte)
+    li t0, 1 # Numero de centroids
+    la t1, centroids # Coloca o array de centroides em t1
+    lw a2, black # Carrega black para a2
+    for_centroids: # Inicio de um ciclo iterar nos centroides
+        addi sp, sp, -4 # Aloca espaco na pilha para o endereco de retorno
+        sw ra, 0(sp) # Salva o enderco de retorno
+        lw a0, 0(t1) # Carrega o X do centroide no qual vai o ciclo para a0
+        addi t1, t1, 4 # Avanca para a posicao seguinte na lista (Y)
+        lw a1, 0(t1) # Carrega o Y do centroide atual para a1
+        jal printPoint # Chama a funcao printPoint para dar print do centroide
+        lw ra, 0(sp) # Restaura o endereco de retorno
+        addi sp, sp, 4 # Desaloca espaco na pilha
+        addi t1, t1, 4 # Avanca para o centroide seguinte
+        addi t0, t0, -1 # Retira 1 a contagem de centroides
+        bgt t0, x0, forClusters # Continua o ciclo se nao tiver dado print a todos os centroides
+    jr ra # Retorna a funcao
+    
+
+### calculateCentroids
+# Calcula os k centroides, a partir da distribuicao atual de pontos associados a cada agrupamento (cluster)
+# Argumentos: nenhum
+# Retorno: nenhum
+
+calculateCentroids:
+    # POR IMPLEMENTAR (2a parte)
+    lw a0, n_points # Carrega numero de pontos para a0
+    la a1, points # Carrega a lista de pontos para a1
+    li t0, 0 # Inicia a variavel t0 (soma das coordendas X)
+    li t1, 0 # Inicia a variavel t1 (soma das coordendas Y)
+    mv t2, a0 # Copia o numero de pontos para t2
+    for_calcula_centroid: # Inicio de um loop para calcular os centroides
+        lw s0, 0(a1) # Carrega a coordenda X do ponto atual para s0
+        add t0, t0, s0 # Soma essa coordenada a soma de coordendas X
+        lw s0, 4(a1) # Carrega a coordenda Y do ponto atual para s0
+        add t1, t1, s0 # Soma essa coordenada a soma de coordendas Y
+        addi a1, a1, 8 # Avança para o ponto seguinte da lista
+        addi t2, t2, -1 # Subtrai 1 ao contador de pontos
+        bgt t2, x0, for_calcula_centroid # Se ainda houver pontos por calucular volta para o inicio do ciclo
+        la a1, centroids # Carrega a lista de centroides para a1
+        div t0, t0, a0 # Divide a soma das coordendas X pelo numero de pontos (medeia de X)
+        sw t0, 0(a1) # Guarda essa media em a1 (primeiro centroide)
+        div t1, t1, a0 # Divide a soma das coordendas Y pelo numero de pontos (medeia de Y)
+        sw t1, 4(a1) # Guarda essa media em a1 (primeiro centroide)
+    jr ra # Retorna a funcao
+
+
+### mainSingleCluster
+# Funcao principal da 1a parte do projeto.
+# Argumentos: nenhum
+# Retorno: nenhum
+
+mainSingleCluster:
+
+    #1. Coloca k=1 (caso nao esteja a 1)
+    lw t0, k # Carrega o valor de k para t0
+    li, t1, 1 # Carrega o valor 1 para t1
+    addi sp, sp, -4 # Aloca espco na pilha para armazenar o endereco de retorno
+    sw ra, 0(sp) # Salva o endereco de retorno 
+    jal mudar_k # Chama a funcao auxiliar mudar_k para definir k como 1
+    lw ra, 0(sp) # Restaura o endereco de retorno
+    addi sp, sp, 4 # Desaloca espaco na pilha
+ 
+    #2. cleanScreen
+    addi sp, sp, -16 # Aloca espaco na pilha
+    sw ra, 0(sp) # Guarda endereco de retorno na pilha
+    sw a2, 4(sp) # Guarda na pilha os valores a2 (cor)
+    sw a0, 8(sp) # Guarda a0 na pilha
+    sw a1, 12(sp) # Guarda a1 na pilha
+    jal cleanScreen # Chama a função cleanScrean para limpar a tela
+    lw ra, 0(sp) # Restaura o endereco de retorno
+    lw a2, 4(sp) # Restaura a2
+    lw a0, 8(sp) # Restaura a0
+    lw a1, 12(sp) # Restaura a1
+    addi sp, sp, 16 # Desaloca espaco na pilha
+
+    #3. printClusters
+    addi sp, sp, -16 # Aloca espaco na pilha
+    sw ra, 0(sp) # Guarda o endereco de reorno na pilha
+    sw a2, 4(sp) # Guarda na pilha os valores a2 (cor)
+    sw a0, 8(sp) # Guarda a0 na pilha
+    sw a1, 12(sp) # Guarda a1 na pilha
+    jal printClusters # Chama a função printClusters para dar print aos clusters
+    lw ra, 0(sp) # Restaura o endereco de retorno
+    lw a2, 4(sp) # Restaura a2
+    lw a0, 8(sp) # Restaura a0
+    lw a1, 12(sp) # Restaura a1
+    addi sp, sp, 16 # Desaloca espaco na pilha
+    
+
+    #4. calculateCentroids
+    addi sp, sp, -16 # Aloca espaco na pilha
+    sw ra, 0(sp) # Guarda o endereco de reorno na pilha
+    sw a0, 4(sp) # Guarda a0 na pilha
+    sw a1, 8(sp) # Guarda a1 na pilha
+    sw a2, 12(sp) # Guarda na pilha os valores a2 (cor)
+    jal calculateCentroids # Chama a função calculateCentroids para calcular os cenroides
+    lw a2, 12(sp) # Restaura a2
+    lw a1, 8(sp) # Restaura a1
+    lw a0, 4(sp) # Restaura a0
+    lw ra, 0(sp) # Restaura o endereco de retorno
+    addi sp, sp, 16 # Desaloca espaco na pilha
+    
+    #5. printCentroids
+    addi sp, sp, -16 # Aloca espaco na pilha
+    sw ra, 0(sp) # Guarda o endereco de reorno na pilha
+    sw a0, 4(sp) # Guarda a0 na pilha
+    sw a1, 8(sp) # Guarda a1 na pilha
+    sw a2, 12(sp) # Guarda na pilha os valores a2 (cor)
+    jal printCentroids # Chama a função printCentroids para dar print aos cenroides
+    lw a2, 12(sp) # Restaura a2
+    lw a1, 8(sp) # Restaura a1
+    lw a0, 4(sp) # Restaura a0
+    lw ra, 0(sp) # Restaura o endereco de retorno
+    addi sp, sp, 16 # Desaloca espaco na pilha
+    
+    #6. Termina
+    jr ra # retorna a funcao
+
+
+
+### manhattanDistance
+# Calcula a distancia de Manhattan entre (x0,y0) e (x1,y1)
+# Argumentos:
+# a0, a1: x0, y0
+# a2, a3: x1, y1
+# Retorno:
+# a0: distance
+
+manhattanDistance:
+    # POR IMPLEMENTAR (2a parte)
+    jr ra
+
+
+### nearestCluster
+# Determina o centroide mais perto de um dado ponto (x,y).
+# Argumentos:
+# a0, a1: (x, y) point
+# Retorno:
+# a0: cluster index
+
+nearestCluster:
+    # POR IMPLEMENTAR (2a parte)
+    jr ra
+
+
+### mainKMeans
+# Executa o algoritmo *k-means*.
+# Argumentos: nenhum
+# Retorno: nenhum
+
+mainKMeans:  
+    # POR IMPLEMENTAR (2a parte)
+    jr ra
