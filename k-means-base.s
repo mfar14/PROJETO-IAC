@@ -29,8 +29,8 @@
 #points:      .word 0,0, 1,1, 2,2, 3,3, 4,4, 5,5, 6,6, 7,7 8,8
 
 #Input B - Cruz
-#n_points:    .word 5
-#points:     .word 4,2, 5,1, 5,2, 5,3 6,2
+n_points:    .word 5
+points:     .word 4,2, 5,1, 5,2, 5,3 6,2
 
 #Input C
 #n_points:    .word 23
@@ -124,30 +124,25 @@ mudar_k:
 
 cleanScreen:
     # POR IMPLEMENTAR (1a parte)
-    lw t0, n_points
-    la t1, points
+    li t0, 33 #fora do limite
+    li t1, 0
     lw a2, white
-    ciclo:
-        addi sp, sp, -4
-        sw ra, 0(sp)
-        lw a0, 0(t1)
-        addi t1, t1, 4
-        lw a1, 0(t1)
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    ciclo1:
+        #volta a inicializar os valores na coluna
+        li t2, 0
+    ciclo2:
+        mv a1, t2
+        mv a0, t1
         jal printPoint
-        lw ra, 0(sp)
-        addi sp, sp, 4
-        addi t1, t1, 4
-        addi t0, t0, -1
-        bgt t0, x0, ciclo #limpa os pontos definidos no input
-        la t1, centroids
-        lw a0, 0(t1)
-        addi, t1, t1, 4
-        lw a1, 0(t1) 
-        addi sp, sp, -4
-        sw ra, 0(sp)
-        jal printPoint #chama a funcao print para o centroid
-        lw ra, 0(sp) #retorna ao ra
-        addi sp, sp, 4
+        addi t2, t2, 1
+        bne t2, t0, ciclo2 #limpa os pontos numa coluna
+        addi t1, t1, 1 #já foi uma coluna "apagada"
+        bne t1, t0, ciclo1 #itera para a proxima coluna
+
+    lw ra, 0(sp)
+    addi sp, sp, 4   
     jr ra
 
     
